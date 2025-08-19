@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Socket.IO Assignment — Chat</title>
+    <style>
+      * { box-sizing: border-box; }
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; background: #0b0f19; color: #e6e8eb; }
+      header { padding: 12px 16px; border-bottom: 1px solid #1e2637; background: #0f1424; position: sticky; top: 0; }
+      header h1 { font-size: 18px; margin: 0; }
+      #app { display: grid; grid-template-rows: 1fr auto; height: 100vh; }
+      #messages { list-style: none; margin: 0; padding: 16px; overflow-y: auto; }
+      #messages li { margin-bottom: 8px; padding: 8px 10px; background: #111a2b; border: 1px solid #1e2637; border-radius: 10px; }
+      #system { color: #8aa1c1; font-style: italic; }
+      #typing { height: 20px; padding: 0 16px; color: #a6b3c6; }
+      form { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid #1e2637; background: #0f1424; }
+      input[type="text"] { flex: 1; padding: 10px 12px; border-radius: 10px; border: 1px solid #2a3650; background: #0b1222; color: #e6e8eb; outline: none; }
+      button { padding: 10px 14px; border-radius: 10px; border: 1px solid #2a3650; background: #18223a; color: #e6e8eb; cursor: pointer; }
+      .small { font-size: 12px; opacity: 0.8; }
+      .muted { opacity: 0.7; }
+      .row { display: flex; align-items: center; gap: 8px; }
+    </style>
+  </head>
+  <body>
+    <header><h1>Realtime Chat (Socket.IO)</h1></header>
+    <div id="app">
+      <ul id="messages"></ul>
+      <div id="typing"></div>
+      <form id="chat-form" autocomplete="off">
+        <input id="message" type="text" placeholder="Type a message…" />
+        <button>Send</button>
+      </form>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io();
+
+      // Ask for a username once
+      const username = prompt('Enter your name:') || 'Anonymous';
+      socket.emit('join', username);
+
+      const messages = document.getElementById('messages');
+      const typing = document.getElementById('typing');
+      const form = document.getElementById('chat-form');
+      const input = document.getElementById('message');
+
+      function addMessage(html, isSystem = false) {
+        const li = document.createElement('li');
+        if (isSystem) li.id = 'system';
+        li.innerHTML = html;
+        messages.appendChild(li);
+        messages.scrollTop = messages.scrollHeight;
+      }
+
+      // Send message
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const text = input.value.trim();
+        if (!text) return;
+        socket.emit('chat message', text);
+        input.value = '';
+        input.focus();
+      });
+
+      // Typing indicator
+      let canEmitTyping = true;
+      input.addEventListener('input', () => {
+        if (!canEmitTyping) return;
+        canEmitTyping = false;
+        socket.emit('typing');
+        setTimeout(() => (canEmitTyping = true), 800);
+      });
+
+      // Receive events
+      socket.on('chat message', (payload) => {
+        const when = new Date(payload.ts).toLocaleTimeString();
+        addMessage(`<strong>${payload.user}</strong> <span class="small muted">${when}</span><br/>${payload.text}`);
+      });
+
+      socket.on('user connected', (who) => {
+        addMessage(`🔔 <em>${who} joined the chat</em>`, true);
+      });
+
+      socket.on('user disconnected', (who) => {
+        addMessage(`👋 <em>${who} left</em>`, true);
+      });
+
+      let typingTimeout;
+      socket.on('typing', (who) => {
+        typing.textContent = `${who} is typing…`;
+        clearTimeout(typingTimeout);
+        typingTimeout = setTimeout(() => (typing.textContent = ''), 900);
+      });
+
+      // Optional room features (uncomment to test from devtools)
+      // socket.emit('join room', 'room-1');
+      // socket.emit('room message', { room: 'room-1', message: 'Hello room!' });
+      // socket.on('room message', (p) => addMessage(`[ROOM ${p.room}] <strong>${p.user}</strong>: ${p.text}`));
+      // socket.on('room notice', (msg) => addMessage(`[ROOM] ${msg}`, true));
+    </script>
+  </body>
+</html>

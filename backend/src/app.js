@@ -21,11 +21,16 @@ app.use(express.urlencoded({ limit: "40kb", extended: true }));
 
 app.use("/api/v1/users", userRoutes);
 
+// This is the route for http://localhost:8000
+app.get('/', (req, res) => {
+  res.send('Server is running and the root route is working!');
+});
+
 const start = async () => {
     app.set("mongo_user")
-    const connectionDb = await mongoose.connect("mongodb+srv://imdigitalashish:imdigitalashish@cluster0.cujabk4.mongodb.net/")
+    const connectionDb = await mongoose.connect("mongodb+srv://xabhishekkumar9:Aa10wbbJykkcysEq@cluster0.3c9yakv.mongodb.net/zoom")
 
-    console.log(`MONGO Connected DB HOst: ${connectionDb.connection.host}`)
+    console.log(`MONGO Connected DB HHost: ${connectionDb.connection.host}`)
     server.listen(app.get("port"), () => {
         console.log("LISTENIN ON PORT 8000")
     });
